@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": true,
     "name": "first-app",
     "slug": "first-app",
     "version": "1.0.0",
@@ -18,10 +19,35 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "-"
+        }
+      },
+      "permissions": [],
+      "package": "com.anonymous.firstapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "@mj-studio/react-native-naver-map",
+        {
+          "client_id": "{{Naver Map Client Key}}"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://repository.map.naver.com/archive/maven"
+            ]
+          }
+        }
+      ]
+    ]
   }
 }
