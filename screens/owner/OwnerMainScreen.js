@@ -1,8 +1,12 @@
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
 import PrimaryButton from "../../components/PrimaryButton";
 import { LineChart } from "react-native-chart-kit";
 import ReviewList from "../../components/list/ReviewList";
 import { useNavigation } from "@react-navigation/native";
+import { getReviews } from "../../backend/review/api";
+import { useContext, useEffect, useState } from "react";
+import { TokenContext } from "../../store/store";
+import { getStoreId } from "../../backend/user/api";
 
 const data = {
   labels: ["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
@@ -15,26 +19,58 @@ const data = {
   ],
   // legend: ["Rainy Days"], // optional
 };
-const reviews = [
-  { id: "abcd", stars: 5, review: "음식이 맛있어요" },
-  {
-    id: "????",
-    stars: 4,
-    review: "사장님이 친절해요",
-  },
-  {
-    id: "???",
-    stars: 4.5,
-    review: "매장 분위기가 좋아요",
-  },
-  {
-    id: "??",
-    stars: 5,
-    review: "매장이 깔끔하고 서비스가 좋아요",
-  },
-];
+// const reviews = [
+//   { id: "abcd", stars: 5, review: "음식이 맛있어요" },
+//   {
+//     id: "????",
+//     stars: 4,
+//     review: "사장님이 친절해요",
+//   },
+//   {
+//     id: "???",
+//     stars: 4.5,
+//     review: "매장 분위기가 좋아요",
+//   },
+//   {
+//     id: "??",
+//     stars: 5,
+//     review: "매장이 깔끔하고 서비스가 좋아요",
+//   },
+// ];
+
 function OwnerMainScreen() {
+  const [reviews, setReviews] = useState(null);
+  // const storeId = 1;
   const Navigator = useNavigation();
+  const tokenContext = useContext(TokenContext);
+  useEffect(() => {
+    async function getSetStoreId() {
+      try {
+        const data = await getStoreId(
+          tokenContext.url,
+          tokenContext.getToken()
+        );
+        console.log(data);
+        tokenContext.setStoreId(data);
+        return data;
+      } catch (e) {
+        Alert.alert(
+          "storeId 오류",
+          "user에 등록된 storeId를 찾을 수 없습니다."
+        );
+      }
+    }
+    async function getSetReviews() {
+      const storeId = await getSetStoreId();
+      const data = await getReviews(
+        tokenContext.url,
+        tokenContext.getToken(),
+        storeId
+      );
+      setReviews(data);
+    }
+    getSetReviews();
+  }, []);
 
   return (
     <View style={styles.rootContanier}>
@@ -80,13 +116,13 @@ function OwnerMainScreen() {
             console.log(item);
             return (
               <ReviewList
-                id={item.id}
-                stars={item.stars}
-                review={item.review}
+                id={item.authorUsername}
+                stars={item.rating}
+                review={item.content}
               />
             );
           }}
-          // keyExtractor={(item) => item.item.index}
+          keyExtractor={(item) => item.id}
         />
       </View>
     </View>

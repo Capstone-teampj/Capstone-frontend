@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
-// import { useNavigation } from "react-navigation/native";
 import PrimaryButton from "./PrimaryButton";
 import { useNavigation } from "@react-navigation/native";
+import { TokenContext } from "../store/store";
+import { registerAdmin, registerUser } from "../backend/register/api";
+import { login } from "../backend/login/api";
 
 function SignForm({ signupOrLogin }) {
   const [email, setEmail] = useState("");
@@ -11,7 +13,27 @@ function SignForm({ signupOrLogin }) {
   const [emailCheck, setEmailCheck] = useState(false);
   const [pwCheck, setPwCheck] = useState(false);
   const [who, setWho] = useState("");
+  const [isLogin, setIsLogin] = useState(false);
   const Navigator = useNavigation();
+  const tokenContext = useContext(TokenContext);
+
+  async function doLogin(url, email, password, role) {
+    const { token } = await login(tokenContext.url, email, password);
+    console.log(token);
+    tokenContext.setToken(token);
+    setIsLogin(true);
+    // if (role === " 일반") Navigator.replace("Drawer");
+    // else Navigator.replace("OwnerMainScreen");
+  }
+  async function doRegister(url, email, password, role) {
+    if (role === "일반") await registerUser(tokenContext.url, email, passWord);
+    else await registerAdmin(tokenContext.url, email, passWord);
+
+    await doLogin(url, email, password);
+
+    if (role === "일반") Navigator.replace("CustomerSurvey");
+    else Navigator.replace("OwnerRegister");
+  }
 
   function emailInputHandler(enteredEmail) {
     setEmail(enteredEmail);
@@ -37,7 +59,8 @@ function SignForm({ signupOrLogin }) {
         if (passWord === passWordValidation) {
           // 유저 등록
           setPwCheck(true);
-          Navigator.replace("CustomerSurvey");
+
+          doRegister(tokenContext.url, email, passWord, "일반");
         } else {
           Alert.alert(
             "패스워드 오류",
@@ -54,7 +77,7 @@ function SignForm({ signupOrLogin }) {
         if (passWord === passWordValidation) {
           // 사장 등록
           setPwCheck(true);
-          Navigator.replace("OwnerRegister");
+          doRegister(tokenContext.url, email, passWord, "사장");
         } else {
           alert(
             "패스워드 오류",
@@ -72,11 +95,29 @@ function SignForm({ signupOrLogin }) {
       Alert.alert("제출 오류", "이메일 또는 패스워드를 입력해주세요.");
       return;
     }
+    // JWT Problem
+    // login(tokenContext.url, tokenContext.getToken(), email, passWord)
+    //   .then((response) => response.data())
+    //   .then((token) => {
+    //     tokenContext.addToken(token);
+    //   })
+    //   .catch((error) => {
+    //     Alert.alert("email 또는 비밀번호가 올바르지 않습니다.");
+    //     return;
+    //   });
     // 로그인 데이터 전송
     if (who === "일반") {
-      Navigator.replace("CustomerMain");
+      (async () => {
+        await doLogin(tokenContext.url, email, passWord);
+        tokenContext.setRole("customer");
+        Navigator.replace("Drawer");
+      })();
     } else {
-      Navigator.replace("OwnerMainScreen");
+      (async () => {
+        await doLogin(tokenContext.url, email, passWord);
+        tokenContext.setRole("owner");
+        Navigator.replace("OwnerMainScreen");
+      })();
     }
     setEmail("");
     setPassword("");

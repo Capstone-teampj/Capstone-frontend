@@ -1,6 +1,7 @@
 import {
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -8,12 +9,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Dropdown } from "react-native-element-dropdown";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import PrimaryButton from "../../components/PrimaryButton";
 import { useNavigation } from "@react-navigation/native";
 import { getLatLng } from "../../geocoding/api";
-
+import { TokenContext } from "../../store/store";
+import { getStoreId } from "../../backend/user/api";
+import { postMenu } from "../../backend/menus/api";
 const categoryList = [
   { label: "한식", value: "한식" },
   { label: "일식", value: "일식" },
@@ -23,26 +25,83 @@ const categoryList = [
   { label: "샐러드/샌드위치", value: "샐러드/샌드위치" },
 ];
 function InitialRegister() {
-  const [category, setCategory] = useState("");
-  const Navigator = useNavigation();
-
-  function registerHandler() {
-    Navigator.replace("OwnerMainScreen");
-  }
-
+  const [name, setName] = useState("");
+  const [tables, setTables] = useState(1);
   const [address, setAddress] = useState("");
   const [latlng, setLatlng] = useState({});
   const [results, setResults] = useState([]);
   const [dialogue, setDialogue] = useState(false);
+  const [menuItems, setMenuItems] = useState([]); // 메뉴 아이템 배열
+  const [category, setCategory] = useState("한식");
+  const [temp, setTemp] = useState();
+
+  const Navigator = useNavigation();
+  const tokenContext = useContext(TokenContext);
+
+  async function registerHandler() {
+    await fetch(tokenContext.url + "/api/stores/register", {
+      method: "POST",
+      headers: {
+        accept: "*/*",
+        Authorization: `Bearer ${tokenContext.getToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: name,
+        address: address,
+        phone: "string",
+        category: category,
+        latitude: latlng.lat || 0,
+        longitude: latlng.lng || 0,
+        totalTables: tables,
+        emptyTables: tables,
+      }),
+    });
+    const storeId = await getStoreId(tokenContext.url, tokenContext.getToken());
+    await Promise.all(
+      menuItems.map((menu) => {
+        postMenu(
+          tokenContext.url,
+          tokenContext.getToken(),
+          storeId,
+          menu.name,
+          menu.price
+        );
+      })
+    );
+
+    Navigator.replace("OwnerMainScreen");
+  }
+
+  function addMenuItem() {
+    setMenuItems((prevItems) => [
+      ...prevItems,
+      { id: Date.now(), name: "", price: "" }, // 고유 ID와 초기값 설정
+    ]);
+  }
+
+  function updateMenuItem(id, field, value) {
+    setMenuItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  }
+
+  function removeMenuItem(id) {
+    setMenuItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  }
+
+  console.log(menuItems);
   return (
     <>
-      <View style={styles.rootContainer}>
-        <Modal transparent={true} visible={dialogue}>
-          <View style={styles.centeredModal}>
-            <View style={styles.modalView}>
-              <Text>주소를 선택하세요</Text>
-              {results.map((item) => (
-                <>
+      <ScrollView>
+        <View style={styles.rootContainer}>
+          <Modal transparent={true} visible={dialogue}>
+            <View style={styles.centeredModal}>
+              <View style={styles.modalView}>
+                <Text>주소를 선택하세요</Text>
+                {results.map((item) => (
                   <Pressable
                     key={item.formatted_address}
                     android_ripple={{ color: "#ccc" }}
@@ -62,85 +121,114 @@ function InitialRegister() {
                       <Text>{item.formatted_address}</Text>
                     </View>
                   </Pressable>
-                </>
-              ))}
+                ))}
+                <PrimaryButton onPress={() => setDialogue(false)}>
+                  닫기
+                </PrimaryButton>
+              </View>
             </View>
-          </View>
-        </Modal>
-        <View style={styles.sectionContainer}>
-          <Text style={styles.mainText}>등록 페이지</Text>
-          <View style={{ width: 150 }}>
-            <PrimaryButton>이미지 업로드</PrimaryButton>
-          </View>
-          <TextInput style={styles.searchContanier} placeholder="가게이름" />
-          <TextInput style={styles.searchContanier} placeholder="테이블 수" />
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
-          >
+          </Modal>
+          <View style={styles.sectionContainer}>
+            <Text style={styles.mainText}>등록 페이지</Text>
+            <View style={{ width: 150 }}>
+              <PrimaryButton>이미지 업로드</PrimaryButton>
+            </View>
             <TextInput
-              value={address}
-              style={[styles.searchContanier, { width: 220 }]}
-              placeholder="주소"
-              onChangeText={setAddress}
+              style={styles.searchContanier}
+              placeholder="가게이름"
+              onChangeText={setName}
             />
-            <PrimaryButton
-              onPress={() => {
-                getLatLng(address).then((results) => setResults(results));
-                setDialogue(true);
-              }}
+            <TextInput
+              style={styles.searchContanier}
+              placeholder="테이블 수"
+              onChangeText={setTables}
+            />
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              주소 입력
-            </PrimaryButton>
-          </View>
-          <Dropdown
-            style={styles.dropdown}
-            placeholderStyle={styles.placeholderStyle}
-            selectedTextStyle={styles.selectedTextStyle}
-            inputSearchStyle={styles.inputSearchStyle}
-            iconStyle={styles.iconStyle}
-            data={categoryList}
-            search
-            maxHeight={300}
-            labelField="label"
-            valueField="value"
-            placeholder="카테고리 설정..."
-            searchPlaceholder="Search..."
-            value={category}
-            onChange={(item) => {
-              setCategory(item.category);
-            }}
-          />
-        </View>
-        <View style={[styles.sectionContainer, { flex: 0.8 }]}>
-          <Text style={styles.mainText}>메뉴</Text>
-          <View style={styles.listContainer}>
-            <PrimaryButton>이미지 업로드</PrimaryButton>
-            <TextInput
-              style={[styles.listText, { marginLeft: 50, width: 100 }]}
-              placeholder="품목명"
+              <TextInput
+                value={address}
+                style={[styles.searchContanier, { width: 220 }]}
+                placeholder="주소를 먼저 입력하세요"
+                onChangeText={setAddress}
+              />
+              {address && (
+                <PrimaryButton
+                  onPress={() => {
+                    getLatLng(address).then((results) => setResults(results));
+                    setDialogue(true);
+                  }}
+                >
+                  주소 입력
+                </PrimaryButton>
+              )}
+            </View>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={categoryList}
+              search
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="카테고리 설정..."
+              searchPlaceholder="Search..."
+              value={category}
+              onChange={(item) => {
+                setCategory(item.value);
+              }}
             />
-            <TextInput style={styles.listText} placeholder="가격" />
           </View>
+          {/* 모달 및 기존 코드 유지 */}
+          <Text style={[styles.mainText, { marginBottom: 10 }]}>메뉴</Text>
+          {menuItems.map((item) => (
+            <View key={item.id} style={styles.listContainer}>
+              <PrimaryButton>이미지</PrimaryButton>
+              <TextInput
+                style={[styles.listText, { width: 100 }]}
+                placeholder="품목명"
+                value={item.name}
+                // onFocus={()=>}
+                onChangeText={(text) => updateMenuItem(item.id, "name", text)}
+              />
+              <TextInput
+                style={styles.listText}
+                placeholder="가격"
+                keyboardType="numeric"
+                value={item.price}
+                // onFocus={setTemp}
+                // onBlur={(temp) => updateMenuItem(item.id, "price", temp)}
+                onChangeText={(text) => updateMenuItem(item.id, "price", text)}
+              />
+              <Pressable
+                android_ripple={{ color: "#ccc" }}
+                onPress={() => removeMenuItem(item.id)}
+              >
+                <Ionicons name="remove-circle-outline" size={30} color="red" />
+              </Pressable>
+            </View>
+          ))}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Pressable android_ripple={{ color: "#ccc" }} onPress={addMenuItem}>
+              <Ionicons name="add-circle-outline" size={50} />
+            </Pressable>
+          </View>
+          <PrimaryButton onPress={registerHandler}>등록</PrimaryButton>
         </View>
-        <View
-          style={{
-            marginVertical: 20,
-            flexDirection: "row",
-            justifyContent: "flex-end",
-          }}
-        >
-          <Pressable android_ripple={{ color: "ccc" }}>
-            <Ionicons name="add-circle-outline" size={50} />
-          </Pressable>
-        </View>
-        <PrimaryButton onPress={registerHandler}>등록</PrimaryButton>
-      </View>
+      </ScrollView>
     </>
   );
 }
 
 export default InitialRegister;
-
 const styles = StyleSheet.create({
   rootContainer: {
     padding: 24,
@@ -163,17 +251,19 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     alignItems: "center",
-    height: 100,
-    padding: 20,
+    height: 80,
+    paddingVertical: 20,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
+    borderColor: "gray",
     borderColor: "#6c6c6c",
+    marginBottom: 20,
+    gap: 16,
   },
   listText: {
     fontSize: 20,
-    marginLeft: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: "gray",
   },

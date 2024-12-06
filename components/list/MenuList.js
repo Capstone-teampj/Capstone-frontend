@@ -8,7 +8,7 @@ function MenuList({ menu }) {
         source={require("../../assets/dummy/dummyRest.jpg")}
       ></Image>
       <View style={styles.textContainer}>
-        <Text style={styles.mainText}>{menu.menu}</Text>
+        <Text style={styles.mainText}>{menu.name}</Text>
         <Text style={styles.priceText}>{menu.price}원</Text>
       </View>
     </View>

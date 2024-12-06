@@ -1,16 +1,24 @@
+import { useNavigation } from "@react-navigation/native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Pressable } from "react-native";
 import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { TokenContext } from "../store/store";
 
-export default function ScanQR() {
+export default function ScanQR({ route }) {
   const [facing, setFacing] = useState("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanned, setIsScanned] = useState(false);
   const [url, setUrl] = useState("");
+
+  const navigator = useNavigation();
+  const tokenContext = useContext(TokenContext);
+
+  const { storeId } = route.params;
   async function barcodeHandler(value) {
     setIsScanned(true);
     setUrl(value.data);
+    tokenContext.setStoreId(storeId);
   }
   if (!permission) {
     // Camera permissions are still loading.
@@ -29,10 +37,17 @@ export default function ScanQR() {
     );
   }
 
-  function toggleCameraFacing() {
-    setFacing((current) => (current === "back" ? "front" : "back"));
-  }
+  // function toggleCameraFacing() {
+  //   setFacing((current) => (current === "back" ? "front" : "back"));
+  // }
 
+  function onPressURLHandler(weburl) {
+    const encodedToken = encodeURIComponent(btoa(tokenContext.getToken()));
+    const encodedUrl = encodeURIComponent(btoa(tokenContext.url));
+    navigator.navigate("OrderWeb", {
+      weburl: weburl + `/${storeId}/${encodedUrl}/${encodedToken}`,
+    });
+  }
   return (
     <View style={styles.container}>
       <CameraView
@@ -57,6 +72,9 @@ export default function ScanQR() {
                 backgroundColor: "black",
                 opacity: 0.6,
               }}
+              onPress={() => {
+                onPressURLHandler(url);
+              }}
             >
               <Text
                 style={[
@@ -68,7 +86,7 @@ export default function ScanQR() {
                   },
                 ]}
               >
-                {url}
+                {url + `/${storeId}`}
               </Text>
             </Pressable>
           ) : (

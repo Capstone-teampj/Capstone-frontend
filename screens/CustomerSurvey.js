@@ -1,17 +1,18 @@
-import { StyleSheet, Text, View } from "react-native";
-import { useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { useContext, useState } from "react";
 
 import SelectionButton from "../components/SelectionButton";
 import PrimaryButton from "../components/PrimaryButton";
 import { useNavigation } from "@react-navigation/native";
-import CustomerMain from "./CustomerMain";
+import { putImportance, putPrefer } from "../backend/user/api";
+import { TokenContext } from "../store/store";
 
 function CustomerSurvey() {
   const Navigator = useNavigation();
-
+  const tokenContext = useContext(TokenContext);
   const [restaurant, setRestaurant] = useState([]);
   // const [sex, setSex] = useState([]);
-  const [prefer, setPrefer] = useState([]);
+  const [importance, setImportance] = useState("");
 
   function onRestaurantHandler(item) {
     if (restaurant.includes(item)) {
@@ -19,7 +20,6 @@ function CustomerSurvey() {
     } else {
       setRestaurant((curArr) => [...curArr, item]);
     }
-    console.log(restaurant);
   }
   // function onSexHandler(item) {
   //   if (sex.includes(item)) {
@@ -28,16 +28,20 @@ function CustomerSurvey() {
   //     setSex((curArr) => [...curArr, item]);
   //   }
   // }
-  function onPreferHandler(item) {
-    if (prefer.includes(item)) {
-      setPrefer((curArr) => curArr.filter((element) => element !== item));
-    } else {
-      setPrefer((curArr) => [...curArr, item]);
-    }
+  function onImportanceHandler(item) {
+    setImportance(item);
   }
 
   function onSubmitHandler() {
+    if (!(restaurant.length > 0 && importance)) {
+      Alert.alert("제출 오류", "음식점과 선호하는 점을 고르세요!!");
+      return;
+    }
     // submit logic
+    const prefer = restaurant.join(", ");
+    console.log(prefer);
+    putPrefer(tokenContext.url, tokenContext.getToken(), prefer);
+    putImportance(tokenContext.url, tokenContext.getToken(), importance);
     onSkipHandler();
   }
 
@@ -48,6 +52,8 @@ function CustomerSurvey() {
     <>
       <View style={styles.rootContainer}>
         <Text>어떤 음식점을 선호하시나요?</Text>
+        <Text style={{ marginBottom: 4 }}>(여러 개 선택 가능)</Text>
+
         <View style={styles.buttonsContainer}>
           <SelectionButton
             items={restaurant}
@@ -74,7 +80,7 @@ function CustomerSurvey() {
             양식
           </SelectionButton>
         </View>
-        <View style={styles.buttonsContainer}>
+        {/* <View style={styles.buttonsContainer}>
           <SelectionButton
             items={restaurant}
             onPress={onRestaurantHandler.bind(this, "샐러드/샌드위치")}
@@ -87,7 +93,7 @@ function CustomerSurvey() {
           >
             카페
           </SelectionButton>
-        </View>
+        </View> */}
         {/* <View style={styles.innerContainer}>
           <Text>성별</Text>
           <View style={styles.buttonsContainer}>
@@ -106,29 +112,34 @@ function CustomerSurvey() {
           </View>
         </View> */}
         <View style={styles.innerContainer}>
-          <Text>무엇을 보시고 선택하시나요?</Text>
+          <Text style={{ textAlign: "center" }}>
+            무엇을 보시고 선택하시나요?
+          </Text>
+          <Text style={{ textAlign: "center", marginBottom: 8 }}>
+            (하나만 선택 가능)
+          </Text>
           <View style={styles.buttonsContainer}>
             <SelectionButton
-              items={prefer}
-              onPress={onPreferHandler.bind(this, "별점")}
+              items={importance}
+              onPress={onImportanceHandler.bind(this, "별점")}
             >
               별점
             </SelectionButton>
             <SelectionButton
-              items={prefer}
-              onPress={onPreferHandler.bind(this, "맛")}
+              items={importance}
+              onPress={onImportanceHandler.bind(this, "맛")}
             >
               맛
             </SelectionButton>
             <SelectionButton
-              items={prefer}
-              onPress={onPreferHandler.bind(this, "서비스")}
+              items={importance}
+              onPress={onImportanceHandler.bind(this, "서비스")}
             >
               서비스
             </SelectionButton>
             <SelectionButton
-              items={prefer}
-              onPress={onPreferHandler.bind(this, "인테리어")}
+              items={importance}
+              onPress={onImportanceHandler.bind(this, "인테리어")}
             >
               인테리어
             </SelectionButton>
@@ -159,20 +170,21 @@ const styles = StyleSheet.create({
   innerContainer: {
     marginTop: 16,
     paddingTop: 16,
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
+    borderColor: "gray",
     gap: 8,
+    justifyContent: "center",
   },
   buttonsContainer: {
     width: 250,
     flexDirection: "row",
     gap: 8,
-    justifyContent: "flex-start",
+    justifyContent: "center",
   },
   primaryButtonConatiner: {
     width: 250,
     marginTop: 32,
     flexDirection: "row",
-    justifycontent: "center",
     gap: 20,
   },
 });
