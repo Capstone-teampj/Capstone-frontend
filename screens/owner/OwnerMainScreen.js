@@ -4,21 +4,14 @@ import { LineChart } from "react-native-chart-kit";
 import ReviewList from "../../components/list/ReviewList";
 import { useNavigation } from "@react-navigation/native";
 import { getReviews } from "../../backend/review/api";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { TokenContext } from "../../store/store";
 import { getStoreId } from "../../backend/user/api";
+import {
+  getCurrentCongestion,
+  getStoreCongestion,
+} from "../../backend/stores/api";
 
-const data = {
-  labels: ["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
-  datasets: [
-    {
-      data: [1, 4, 3, 3, 1, 1, 2, 3, 5, 4],
-      color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
-      strokeWidth: 2, // optional
-    },
-  ],
-  // legend: ["Rainy Days"], // optional
-};
 // const reviews = [
 //   { id: "abcd", stars: 5, review: "음식이 맛있어요" },
 //   {
@@ -39,10 +32,38 @@ const data = {
 // ];
 
 function OwnerMainScreen() {
+  // const data = {
+  //   labels: ["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+  //   datasets: [
+  //     {
+  //       data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  //       color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`, // optional
+  //       strokeWidth: 2, // optional
+  //     },
+  //   ],
+  //   // legend: ["Rainy Days"], // optional
+  // };
+  const [congestionData, setCongestion] = useState([]);
   const [reviews, setReviews] = useState(null);
-  // const storeId = 1;
+  const [curCongestion, setCurCongestion] = useState("");
   const Navigator = useNavigation();
   const tokenContext = useContext(TokenContext);
+
+  const data = useMemo(() => {
+    return {
+      labels: ["11", "12", "13", "14", "15", "16", "17", "18", "19", "20"],
+      datasets: [
+        {
+          data:
+            congestionData.length > 0
+              ? congestionData
+              : [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+          color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+          strokeWidth: 2,
+        },
+      ],
+    };
+  }, [congestionData]);
   useEffect(() => {
     async function getSetStoreId() {
       try {
@@ -50,7 +71,6 @@ function OwnerMainScreen() {
           tokenContext.url,
           tokenContext.getToken()
         );
-        console.log(data);
         tokenContext.setStoreId(data);
         return data;
       } catch (e) {
@@ -69,13 +89,36 @@ function OwnerMainScreen() {
       );
       setReviews(data);
     }
+    async function getSetCongeston() {
+      const congestions = await getStoreCongestion(
+        tokenContext.url,
+        tokenContext.getToken(),
+        tokenContext.getStoreId()
+      );
+      const curCongestion = await getCurrentCongestion(
+        tokenContext.url,
+        tokenContext.getToken(),
+        tokenContext.getStoreId()
+      );
+      setCurCongestion(curCongestion);
+      // console.log(congestions);
+      let congestionsArr = new Array();
+      await Promise.all(
+        congestions.map((congestion) =>
+          congestionsArr.push(congestion.congestionLevel + 1)
+        )
+      );
+      // console.log(congestionsArr);
+      setCongestion(congestionsArr);
+    }
     getSetReviews();
+    getSetCongeston();
   }, []);
 
-  return (
+  return congestionData.length > 0 ? (
     <View style={styles.rootContanier}>
-      <View style={styles.subContainer}>
-        <Text>안녕하세요, 사장님!!</Text>
+      <View style={{ flex: 0.9 }}>
+        <Text style={styles.mainText}>안녕하세요, 사장님!!</Text>
         <View style={styles.buttonsContanier}>
           <PrimaryButton
             onPress={() => {
@@ -96,9 +139,10 @@ function OwnerMainScreen() {
         </View>
       </View>
       <View style={styles.subContainer}>
-        <Text>매장 혼잡도</Text>
+        <Text style={styles.mainText}>
+          매장 혼잡도 (현재 혼잡도는 {curCongestion.slice(-1)}입니다.)
+        </Text>
         <View style={styles.chartContainer}>
-          {/* react-native-chart-kit */}
           <LineChart
             data={data}
             width={360}
@@ -109,7 +153,7 @@ function OwnerMainScreen() {
         </View>
       </View>
       <View style={[styles.subContainer, { gap: 8 }]}>
-        <Text>리뷰</Text>
+        <Text style={styles.mainText}>리뷰</Text>
         <FlatList
           data={reviews}
           renderItem={({ item }) => {
@@ -126,17 +170,22 @@ function OwnerMainScreen() {
         />
       </View>
     </View>
-  );
+  ) : null;
 }
 export default OwnerMainScreen;
 
 const styles = StyleSheet.create({
   rootContanier: {
     flex: 1,
-    padding: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
   },
   subContainer: {
     flex: 1,
+  },
+  mainText: {
+    fontSize: 20,
+    fontWeight: "600",
   },
   buttonsContanier: {
     flex: 1,
@@ -149,6 +198,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 20,
+    overflow: "hidden",
   },
   button: {
     height: 170,

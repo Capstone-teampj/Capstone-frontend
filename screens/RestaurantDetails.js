@@ -63,7 +63,8 @@ import { TokenContext } from "../store/store";
 
 function RestaurantDetails({ route }) {
   const tokenContext = useContext(TokenContext);
-  const { storeId, storeName, congestionLevel, averageRating } = route.params;
+  const { storeId, storeName, congestionLevel, averageRating, discountActive } =
+    route.params;
   const [menus, setMenus] = useState(null);
   useEffect(() => {
     async function getSetMenus() {
@@ -73,6 +74,7 @@ function RestaurantDetails({ route }) {
         storeId
       );
       setMenus(data);
+      console.log(menus);
     }
     getSetMenus();
   }, []);
@@ -113,10 +115,11 @@ function RestaurantDetails({ route }) {
             {congestionLevel} 단계
           </Text>
         </View>
-        <View style={styles.eventContainer}>
-          <Text style={styles.eventText}>특별 할인 중!</Text>
-          <Text style={styles.eventText}>00:00 까지</Text>
-        </View>
+        {discountActive && (
+          <View style={styles.eventContainer}>
+            <Text style={styles.eventText}>특별 할인 중!</Text>
+          </View>
+        )}
         <FlatList
           style={styles.listView}
           data={menus}

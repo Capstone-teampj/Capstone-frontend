@@ -1,5 +1,6 @@
 import {
   FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,16 +11,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useState, useEffect, useContext } from "react";
 
+import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 
-import MapView, { Callout, Marker } from "react-native-maps";
+import MapView, { Callout, Circle, Marker } from "react-native-maps";
 import { PROVIDER_GOOGLE } from "react-native-maps";
 
 import List from "../components/list/List";
 import CategoryButton from "../components/CategoryButton";
 import RestaurantDetails from "./RestaurantDetails";
-import { getStores } from "../backend/stores/api";
+import {
+  getStoreRecommand,
+  getStores,
+  getStoresNearby,
+} from "../backend/stores/api";
 import { TokenContext } from "../store/store";
+import PrimaryButton from "../components/PrimaryButton";
 
 // const restaurants = [
 //   {
@@ -65,19 +72,37 @@ import { TokenContext } from "../store/store";
 // ];
 
 function CustomerMain() {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+
   const tokenContext = useContext(TokenContext);
   const navigator = useNavigation();
   const [location, setLocation] = useState(null);
+  const [notificationSent, setNotificationSent] = useState(false); // 알림 전송 여부 상태 추가
   const [errorMsg, setErrorMsg] = useState(null);
   const [restaurants, setRestaurants] = useState(null);
   const [filtered, setFiltered] = useState(null);
-
+  const [recommandedList, setRecommandedList] = useState(null);
+  const [modal, setModal] = useState(false);
   const [search, setSearch] = useState("");
+  async function recommandHandler() {
+    const data = await getStoreRecommand(
+      tokenContext.url,
+      tokenContext.getToken()
+    );
+    console.log(data);
+    setRecommandedList(data);
+    setModal(true);
+  }
 
   function categoryButtonHandler(value) {
     setSearch(value);
   }
-
   function listClickHandler(store) {
     navigator.navigate("RestaurantDetails", {
       // 평균별점, 프로모션 여부
@@ -85,8 +110,47 @@ function CustomerMain() {
       storeName: store.name,
       congestionLevel: store.congestionLevel,
       averageRating: store.averageRating,
+      discountActive: store.discountActive,
     });
   }
+  // useEffect(() => {
+  //   async function getCurrentLocation() {
+  //     let { status } = await Location.requestForegroundPermissionsAsync();
+  //     if (status !== "granted") {
+  //       setErrorMsg("Permission to access location was denied");
+  //       return;
+  //     }
+
+  //     const location = await Location.getCurrentPositionAsync({});
+  //     setLocation(location);
+  //   }
+  //   async function getSetStores() {
+  //     console.log(tokenContext.url, tokenContext.getToken());
+  //     const stores = await getStores(tokenContext.url, tokenContext.getToken());
+  //     setRestaurants(stores);
+  //   }
+  //   async function getNearby(location) {
+  //     const stores = await getStoresNearby(
+  //       tokenContext.url,
+  //       tokenContext.getToken(),
+  //       location.coords.latitude,
+  //       location.coords.longitude
+  //     );
+  //     setRestaurants(stores);
+  //   }
+  //   async function initialize() {
+  //     await getCurrentLocation();
+  //     if (location) {
+  //       await getNearby(location);
+  //     } else {
+  //       console.error("Location is not set");
+  //     }
+  //   }
+  //   // getSetStores();
+  //   // getCurrentLocation();
+  //   initialize();
+  // }, []);
+
   useEffect(() => {
     async function getCurrentLocation() {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -95,21 +159,34 @@ function CustomerMain() {
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-      // console.log(location);
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation); // location 상태를 업데이트
     }
-    async function getSetStores() {
-      console.log(tokenContext.url, tokenContext.getToken());
-      const stores = await getStores(tokenContext.url, tokenContext.getToken());
+    // 현재 위치 가져오기 호출
+    getCurrentLocation();
+    (async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("알림 권한이 거부되었습니다!");
+      }
+    })();
+  }, []); // 빈 배열로 설정하여 컴포넌트가 처음 렌더링될 때만 실행
+
+  useEffect(() => {
+    async function getNearby() {
+      if (!location) return; // location이 설정되지 않았다면 종료
+      const stores = await getStoresNearby(
+        tokenContext.url,
+        tokenContext.getToken(),
+        location.coords.latitude,
+        location.coords.longitude
+      );
       setRestaurants(stores);
     }
-    // setRestaurants(getStores());
-    getSetStores();
-    getCurrentLocation();
 
-    // 서버로 부터 데이터 받아오기
-  }, []);
+    // location이 설정되면 근처 매장 호출
+    getNearby();
+  }, [location]); // location이 변경될 때만 실행
 
   useEffect(() => {
     console.log(search);
@@ -121,10 +198,71 @@ function CustomerMain() {
       );
     }
   }, [search]);
+  // useEffect(() => {
+  //   async function sendNotification() {
+  //     if (!restaurants) return;
+  //     await Notifications.scheduleNotificationAsync({
+  //       content: {
+  //         title: "매장 할인 정보",
+  //         body: "현재 위치 주변에 N개의 할인 매장이 있어요.",
+  //       },
+  //       trigger: null, // 즉시 보내려면 'trigger'에 'null'을 설정
+  //     });
+  //   }
+  //   sendNotification();
+  // }, [restaurants]);
+  useEffect(() => {
+    async function sendNotification() {
+      if (!restaurants || notificationSent) return; // restaurants가 없거나 이미 알림이 전송된 경우 종료
 
+      const discountStores = restaurants.filter(
+        (store) => store.discountActive
+      );
+      if (discountStores.length > 0) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "매장 할인 정보",
+            body: `현재 위치 주변에 ${discountStores.length}개의 할인 매장이 있어요.`,
+          },
+          trigger: null, // 즉시 보내려면 'trigger'에 'null'을 설정
+        });
+        setNotificationSent(true); // 알림 전송 완료 상태 설정
+      }
+    }
+
+    sendNotification();
+  }, [restaurants]); // restaurants 상태 변경 시 실행
   return restaurants ? (
     <>
       <View style={styles.rootContainer}>
+        <Modal transparent={true} visible={modal}>
+          <View style={styles.centeredModal}>
+            <View style={styles.modalView}>
+              <Text>당신을 위한 추천 음식점입니다.</Text>
+              <FlatList
+                data={
+                  recommandedList
+                    ? restaurants.filter((one) =>
+                        recommandedList.recommendedStoreIds.includes(one.id)
+                      )
+                    : null
+                }
+                renderItem={({ item }) => (
+                  <List
+                    onPress={() => listClickHandler(item)}
+                    isPromotion={item.discountActive}
+                  >
+                    {/* stores에 할인 여부 필요 */}
+                    {item.name}
+                  </List>
+                )}
+              />
+              <PrimaryButton onPress={() => setModal(false)}>
+                닫기
+              </PrimaryButton>
+            </View>
+          </View>
+        </Modal>
         <View style={styles.searchContainer}>
           <Ionicons
             name="search-outline"
@@ -140,7 +278,9 @@ function CustomerMain() {
         </View>
         <View style={styles.buttonsContainer}>
           <ScrollView horizontal={true}>
-            <CategoryButton>나만의 맛집 추천</CategoryButton>
+            <CategoryButton onPress={recommandHandler}>
+              나만의 맛집 추천
+            </CategoryButton>
             <CategoryButton onPress={() => categoryButtonHandler("한식")}>
               한식
             </CategoryButton>
@@ -153,14 +293,14 @@ function CustomerMain() {
             <CategoryButton onPress={() => categoryButtonHandler("양식")}>
               양식
             </CategoryButton>
-            <CategoryButton
+            {/* <CategoryButton
               onPress={() => categoryButtonHandler("샐러드/샌드위치")}
             >
               샐러드/샌드위치
             </CategoryButton>
             <CategoryButton onPress={() => categoryButtonHandler("카페")}>
               카페
-            </CategoryButton>
+            </CategoryButton> */}
           </ScrollView>
         </View>
         {/* mapview로 지도 출력 */}
@@ -179,13 +319,20 @@ function CustomerMain() {
 
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
               }}
               showsUserLocation={true}
               followsUserLocation={true}
               showsMyLocationButton={true}
             >
+              <Circle
+                center={{
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                }}
+                radius={500}
+              />
               {restaurants.map((restaurant) => (
                 <Marker
                   key={restaurant.id}
@@ -248,5 +395,25 @@ const styles = StyleSheet.create({
     borderColor: "black",
     borderRadius: 12,
     height: 40,
+  },
+  centeredModal: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalView: {
+    margin: 20,
+    gap: 6,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

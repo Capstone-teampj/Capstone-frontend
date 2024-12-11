@@ -34,6 +34,7 @@ export async function putImportance(url, token, importance) {
 }
 
 export async function putPrefer(url, token, prefer) {
+  console.log(prefer);
   try {
     const response = await fetch(url + "/api/users/preferences", {
       method: "PUT",
@@ -43,7 +44,7 @@ export async function putPrefer(url, token, prefer) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        Preference: prefer,
+        preferences: prefer,
       }),
     });
     const data = await response.text();

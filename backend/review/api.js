@@ -42,9 +42,9 @@ export async function getReviewScore(url, token, storeId) {
         // 추가적인 비동기 작업이 필요하다면 여기에 작성
       })
     );
-    // console.log(reviews);
+    console.log(reviews);
     const response = await fetch(
-      "https://0eaf-49-142-59-70.ngrok-free.app/reviewscore/scoring_reviews/",
+      "https://e4fd-49-142-59-70.ngrok-free.app/reviewscore/scoring_reviews/",
       {
         method: "POST",
         headers: {
@@ -69,9 +69,9 @@ export async function getReviewSummary(url, token, storeId) {
         delete review.rating;
       })
     );
-    // console.log(reviews);
+    console.log(reviews);
     const response = await fetch(
-      "https://0eaf-49-142-59-70.ngrok-free.app/reviewanal/analyze_reviews/",
+      "https://e4fd-49-142-59-70.ngrok-free.app/reviewanal/analyze_reviews/",
       {
         method: "POST",
         headers: {
@@ -81,7 +81,6 @@ export async function getReviewSummary(url, token, storeId) {
         body: JSON.stringify(reviews),
       }
     );
-    // console.log(await response.json());
     return await response.json();
   } catch (error) {
     console.log(error);

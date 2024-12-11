@@ -13,6 +13,7 @@ function CustomerSurvey() {
   const [restaurant, setRestaurant] = useState([]);
   // const [sex, setSex] = useState([]);
   const [importance, setImportance] = useState("");
+  const [fakeImportance, setFakeImportance] = useState("");
 
   function onRestaurantHandler(item) {
     if (restaurant.includes(item)) {
@@ -30,6 +31,20 @@ function CustomerSurvey() {
   // }
   function onImportanceHandler(item) {
     setImportance(item);
+    switch (item) {
+      case "rating":
+        setFakeImportance("별점");
+        break;
+      case "taste":
+        setFakeImportance("맛");
+        break;
+      case "service":
+        setFakeImportance("서비스");
+        break;
+      case "interior":
+        setFakeImportance("인테리어");
+        break;
+    }
   }
 
   function onSubmitHandler() {
@@ -120,26 +135,26 @@ function CustomerSurvey() {
           </Text>
           <View style={styles.buttonsContainer}>
             <SelectionButton
-              items={importance}
-              onPress={onImportanceHandler.bind(this, "별점")}
+              items={fakeImportance}
+              onPress={onImportanceHandler.bind(this, "rating")}
             >
               별점
             </SelectionButton>
             <SelectionButton
-              items={importance}
-              onPress={onImportanceHandler.bind(this, "맛")}
+              items={fakeImportance}
+              onPress={onImportanceHandler.bind(this, "taste")}
             >
               맛
             </SelectionButton>
             <SelectionButton
-              items={importance}
-              onPress={onImportanceHandler.bind(this, "서비스")}
+              items={fakeImportance}
+              onPress={onImportanceHandler.bind(this, "service")}
             >
               서비스
             </SelectionButton>
             <SelectionButton
-              items={importance}
-              onPress={onImportanceHandler.bind(this, "인테리어")}
+              items={fakeImportance}
+              onPress={onImportanceHandler.bind(this, "interior")}
             >
               인테리어
             </SelectionButton>

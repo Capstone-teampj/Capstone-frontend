@@ -9,7 +9,19 @@ function MenuList({ menu }) {
       ></Image>
       <View style={styles.textContainer}>
         <Text style={styles.mainText}>{menu.name}</Text>
-        <Text style={styles.priceText}>{menu.price}원</Text>
+        <Text
+          style={[
+            styles.priceText,
+            menu.discountActive ? { textDecorationLine: "line-through" } : null,
+          ]}
+        >
+          {menu.price}원
+        </Text>
+        {menu.discountActive ? (
+          <Text style={[styles.priceText, { color: "red" }]}>
+            특별할인가: {menu.discountedPrice}원
+          </Text>
+        ) : null}
       </View>
     </View>
   );

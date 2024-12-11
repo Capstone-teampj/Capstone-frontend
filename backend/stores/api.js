@@ -19,3 +19,75 @@ export async function getStores(url, token) {
     console.error(error);
   }
 }
+
+export async function getStoreRecommand(url, token) {
+  try {
+    const response = await fetch(url + "/api/top5recommendations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "*/*",
+      },
+    });
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getStoreCongestion(url, token, storeId) {
+  try {
+    const response = await fetch(
+      // /api/store-congestion/1/all?date=2024-12-11
+      url + `/api/store-congestion/${storeId}/all?date=2024-12-13`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "*/*",
+        },
+      }
+    );
+
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getCurrentCongestion(url, token, storeId) {
+  try {
+    const response = await fetch(url + `/api/stores/${storeId}/congestion`, {
+      method: "GET",
+      headers: {
+        Accept: "*/*",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return await response.text();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function getStoresNearby(url, token, lat, lng, rad = 0.5) {
+  console.log("parameter", lat, lng, rad);
+  try {
+    const response = await fetch(
+      url +
+        `/api/stores/nearby?latitude=${37.503606}&longitude=${126.957056}&radius=${rad}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "*/*",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+  }
+}

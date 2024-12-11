@@ -12,7 +12,7 @@ function ReviewAnalysis() {
       const result = await getReviewScore(
         tokenContext.url,
         tokenContext.getToken(),
-        1
+        tokenContext.getStoreId()
       );
       setScores(result[0]);
       console.log();
@@ -21,7 +21,7 @@ function ReviewAnalysis() {
       const result = await getReviewSummary(
         tokenContext.url,
         tokenContext.getToken(),
-        1
+        tokenContext.getStoreId()
       );
       setSummaries(result);
       console.log(result);

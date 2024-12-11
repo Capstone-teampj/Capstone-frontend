@@ -101,6 +101,7 @@ function PromotionRegister() {
       )
     );
 
+    Navigator.replace("OwnerMainScreen");
     // Navigator.navigate("OwnerMainScreen");
   }
   return menus ? (

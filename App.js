@@ -45,9 +45,9 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator>
           <Stack.Screen name="Landing" component={Landing} />
+          {/* 사장님 화면 */}
           <Stack.Screen name="OwnerRegister" component={InitialRegister} />
           <Stack.Screen name="OwnerMainScreen" component={OwnerMainScreen} />
-          {/* 사장님 화면 */}
           <Stack.Screen name="CustomerMain" component={CustomerMain} />
           <Stack.Screen name="ReviewAnalysis" component={ReviewAnalysis} />
           <Stack.Screen
