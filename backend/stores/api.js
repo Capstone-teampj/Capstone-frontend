@@ -75,8 +75,7 @@ export async function getStoresNearby(url, token, lat, lng, rad = 0.5) {
   console.log("parameter", lat, lng, rad);
   try {
     const response = await fetch(
-      url +
-        `/api/stores/nearby?latitude=${37.503606}&longitude=${126.957056}&radius=${rad}`,
+      url + `/api/stores/nearby?latitude=${lat}&longitude=${lng}&radius=${rad}`,
       {
         method: "GET",
         headers: {

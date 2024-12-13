@@ -44,7 +44,7 @@ export async function getReviewScore(url, token, storeId) {
     );
     console.log(reviews);
     const response = await fetch(
-      "https://e4fd-49-142-59-70.ngrok-free.app/reviewscore/scoring_reviews/",
+      "https://d656-49-142-59-70.ngrok-free.app/reviewscore/scoring_reviews/",
       {
         method: "POST",
         headers: {
@@ -71,7 +71,7 @@ export async function getReviewSummary(url, token, storeId) {
     );
     console.log(reviews);
     const response = await fetch(
-      "https://e4fd-49-142-59-70.ngrok-free.app/reviewanal/analyze_reviews/",
+      "https://d656-49-142-59-70.ngrok-free.app/reviewanal/analyze_reviews/",
       {
         method: "POST",
         headers: {

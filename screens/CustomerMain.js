@@ -70,13 +70,13 @@ import PrimaryButton from "../components/PrimaryButton";
 //     longitude: 126.959667,
 //   },
 // ];
-
+//
 function CustomerMain() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
     }),
   });
 
@@ -113,43 +113,6 @@ function CustomerMain() {
       discountActive: store.discountActive,
     });
   }
-  // useEffect(() => {
-  //   async function getCurrentLocation() {
-  //     let { status } = await Location.requestForegroundPermissionsAsync();
-  //     if (status !== "granted") {
-  //       setErrorMsg("Permission to access location was denied");
-  //       return;
-  //     }
-
-  //     const location = await Location.getCurrentPositionAsync({});
-  //     setLocation(location);
-  //   }
-  //   async function getSetStores() {
-  //     console.log(tokenContext.url, tokenContext.getToken());
-  //     const stores = await getStores(tokenContext.url, tokenContext.getToken());
-  //     setRestaurants(stores);
-  //   }
-  //   async function getNearby(location) {
-  //     const stores = await getStoresNearby(
-  //       tokenContext.url,
-  //       tokenContext.getToken(),
-  //       location.coords.latitude,
-  //       location.coords.longitude
-  //     );
-  //     setRestaurants(stores);
-  //   }
-  //   async function initialize() {
-  //     await getCurrentLocation();
-  //     if (location) {
-  //       await getNearby(location);
-  //     } else {
-  //       console.error("Location is not set");
-  //     }
-  //   }
-  //   // getSetStores();
-  //   // getCurrentLocation();
-  //   initialize();
-  // }, []);
 
   useEffect(() => {
     async function getCurrentLocation() {
@@ -198,19 +161,6 @@ function CustomerMain() {
       );
     }
   }, [search]);
-  // useEffect(() => {
-  //   async function sendNotification() {
-  //     if (!restaurants) return;
-  //     await Notifications.scheduleNotificationAsync({
-  //       content: {
-  //         title: "매장 할인 정보",
-  //         body: "현재 위치 주변에 N개의 할인 매장이 있어요.",
-  //       },
-  //       trigger: null, // 즉시 보내려면 'trigger'에 'null'을 설정
-  //     });
-  //   }
-  //   sendNotification();
-  // }, [restaurants]);
   useEffect(() => {
     async function sendNotification() {
       if (!restaurants || notificationSent) return; // restaurants가 없거나 이미 알림이 전송된 경우 종료

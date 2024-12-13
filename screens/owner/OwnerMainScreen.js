@@ -90,15 +90,16 @@ function OwnerMainScreen() {
       setReviews(data);
     }
     async function getSetCongeston() {
+      const storeId = await getSetStoreId();
       const congestions = await getStoreCongestion(
         tokenContext.url,
         tokenContext.getToken(),
-        tokenContext.getStoreId()
+        storeId
       );
       const curCongestion = await getCurrentCongestion(
         tokenContext.url,
         tokenContext.getToken(),
-        tokenContext.getStoreId()
+        storeId
       );
       setCurCongestion(curCongestion);
       // console.log(congestions);
